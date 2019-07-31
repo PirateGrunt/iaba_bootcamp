@@ -1,0 +1,871 @@
+---
+title: IABA Bootcamp
+date: 30 July 2019
+author: Brian A. Fannin ACAS CSPA
+output: 
+    revealjs::revealjs_presentation:
+      center: false
+      css: css/custom.css
+      self_contained: true
+      theme: white
+      transition: slide
+      df_print: paged
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE
+  , collapse = TRUE
+  , error = TRUE
+  , message = FALSE
+  , warning = FALSE
+  , fig.height = 4
+)
+```
+
+# Welcome
+
+## Agenda
+
+* Data structure
+* Data exploration
+* Data visualization
+* Data modeling
+
+## Tools context
+
+* R 
+* Excel
+* SQL
+* Others
+
+## %>% 
+
+* Passes the object to the left as the first argument of the function to the right
+* Enables nested functions to be read left to right, top to bottom, not inside out
+
+## %>%
+
+```{r message = FALSE}
+library(magrittr)
+
+exp(1)
+
+1 %>% exp()
+
+1 %>% 
+  exp() %>% 
+  log()
+
+
+log(exp(1))
+```
+
+## 
+
+* **Univariate structure**
+* Univariate exploration
+* Univariate visualization
+* Univariate modeling
+
+# Univariate structure
+
+## All data is _typed_
+
+* Continuous, double, $\mathbb{R}$
+* Integer, $\mathbb{N}$
+* Character
+* Date
+
+```{r}
+5 + 'Steve'
+```
+
+## Vectors
+
+* Set of values of the same data type
+* Easy mapping to concepts in linear algebra
+* Matrices, and higher-order arrays/tensors
+
+$$Y = \beta_0 + \beta_1 * X$$
+
+This:
+
+```{r eval = FALSE}
+y = b_0 + b_1 * x
+```
+
+Rather than: 
+
+```
+for i = 1 to N
+  y[i] = b_0 + b_1 * x[i]
+next i
+```
+
+## Excel
+
+Vectors do not really exist in a spreadsheet
+
+In VBA, these are arrays
+
+```
+dim claim_amount(1 to num_claims) as double
+```
+
+## SQL
+
+Does not really exist. Individual columns may be regarded as vectors. More on SQL tables soon.
+
+```
+SELECT 
+  claim_amount
+FROM
+  tbl_claim
+```
+
+## R
+
+Core concept in R
+
+```{r}
+set.seed(1234)
+num_claims <- 500
+mean <- 10e3
+cv <- 0.3
+claim_amount <- rgamma(num_claims, 1 / cv^2, scale = mean * cv ^ 2)
+
+claim_amount %>% head()
+```
+
+## Vector access
+
+```{r collapse = FALSE}
+claim_amount[1:5]
+```
+
+```{r collapse=FALSE}
+claim_amount[claim_amount > 10e3]
+```
+
+## Type conversion
+
+* Data may be converted from one type to another
+* Common when converting character dates and currencies into numeric values
+
+## 
+
+* Univariate structure
+* **Univariate exploration**
+* Univariate visualization
+* Univariate modeling
+
+# Univariate exploration
+
+## Basic 
+
+* N -> 1 or N -> M mapping functions, basic statistics
+* max
+* min
+* quantiles
+* extremes
+* 2nd and higher statistical moments
+
+## Basic EDA
+
+```{r}
+claim_amount %>% 
+  summary()
+
+claim_amount %>% 
+  var()
+
+sd(claim_amount) / mean(claim_amount)
+```
+
+## Limited expected value
+
+```{r}
+library(actuar)
+
+claim_lev <- claim_amount %>% 
+  elev()
+
+claim_lev(10e3)
+```
+
+## 
+
+* Univariate structure
+* Univariate exploration
+* **Univariate visualization**
+* Univariate modeling
+
+# Univariate visualization
+
+## Histogram
+
+```{r}
+hist(claim_amount)
+```
+
+## Boxplot
+
+```{r}
+boxplot(claim_amount)
+```
+
+## 
+
+* Univariate structure
+* Univariate exploration
+* Univariate visualization
+* **Univariate modeling**
+
+# Univariate modeling
+
+## Single parametric distribution
+
+```{r}
+library(MASS)
+
+fit_gamma <- fitdistr(claim_amount, 'gamma')
+fit_gamma
+
+fit_lognorm <- fitdistr(claim_amount, 'log-normal')
+fit_lognorm
+```
+
+## Maximum likelihood in Excel
+
+* This may be done in Excel
+* Form the likelihood function and use Solver
+* Standard error of parameters must be coded by hand
+
+## Inferences
+
+```{r}
+plnorm(10e3, fit_lognorm$estimate[1], fit_lognorm$estimate[2])
+pgamma(10e3, fit_gamma$estimate[1], fit_gamma$estimate[2])
+```
+
+## Parametric limited expected value
+
+```{r}
+claim_lev(10e3)
+
+levgamma(10e3, fit_gamma$estimate[1], fit_gamma$estimate[2])
+```
+
+## 
+
+* **Multivariate structure**
+* Multivariate exploration
+* Multivariate visualization
+* Multivariate modeling
+
+# Multivariate structure
+
+```{r include = FALSE}
+load('data/data.rda')
+```
+
+## The table
+
+* Set of columns
+* Each column has the same type
+
+```{r echo = FALSE}
+tbl_policy %>% 
+  dplyr::select(region, effective_date, premium) %>% 
+  knitr::kable(
+    format.args = list(big.mark = ',')
+  )
+```
+
+
+## Alternatives
+
+* Graph - https://neo4j.com/
+* Document - https://www.mongodb.com/
+* Others: columnar store, CouchDB, Hive, Spark, etc.
+
+## Tables in R
+
+```{r}
+library(tidyverse)
+```
+
+```{r eval = FALSE}
+tbl_claim <- tibble(
+  occurrence_date = as.Date('2001-01-01')
+  , claim_amount = claim_amount
+)
+```
+
+## Relational Database Management System - RDBMS
+
+* Microsoft Access
+* Oracle
+* SQL Server
+* PostgreSQL
+
+## Tables in SQL
+
+```
+CREATE TABLE tbl_policy (
+	id	INTEGER NOT NULL PRIMARY KEY,
+	effective_date	TEXT,
+	premium	REAL,
+	years_in_operation	REAL,
+	number_of_employees	INTEGER,
+	num_claims	INTEGER,
+	expiration_date	TEXT
+);
+```
+
+## Structural integrity
+
+* Single-table constraints
+  * Uniqueness of record properties: SSN, VIN, etc.
+  * Value domain restrictions: 
+* Multi-table constraints
+  * Parent/child table, primary/foreign key
+
+## 
+
+* Multivariate structure
+* **Multivariate exploration**
+* Multivariate visualization
+* Multivariate modeling
+
+# Multivariate exploration
+
+## Grammar of data, one table
+
+__Basic verbs__
+
+| Action              | SQL statement    | R Function  |
+|--------------------|--------------|-----------------|
+| Column-wise subset |  SELECT `X` AS [`Y`] | `select()`    |
+| Row-wise subset | WHERE   | `filter()` |
+| Add additional column | SELECT `X` / `Y` AS `LossRatio` | `mutate()`  |
+| Apply action to a subset  | GROUP BY  | `group_by()`  |
+| Summarise | SUM(X), etc. |  `summarise()`  |
+| Arrange | ORDER BY  | `arrange()` |
+
+## SQL: declarative
+
+* SQL statement _declares_ the desired result
+* Statements contain various _clauses_, which apply different aspects of the grammar
+* Clauses must appear in a specific order
+* Computer decides on the order of execution
+
+## R: imperative
+
+* Functions are executed one at a time, in the order in which they appear
+* As many functions as we like, in  any order
+* Changing the order may change the outcome
+
+## Grammar of data, one table
+
+__Basic verbs__
+
+| Action              | SQL statement    | R Function  |
+|--------------------|--------------|-----------------|
+| Column-wise subset |  SELECT `X` AS [`Y`] | `select()`    |
+| Row-wise subset | WHERE   | `filter()` |
+| Add additional column | SELECT `X` / `Y` AS `LossRatio` | `mutate()`  |
+| Apply action to a subset  | GROUP BY  | `group_by()`  |
+| Summarise | SUM(X), etc. |  `summarise()`  |
+| Arrange | ORDER BY  | `arrange()` |
+
+## Column-wise subset - SQL
+
+```
+SELECT 
+  effective_date
+  , expiration_date
+FROM 
+  tbl_policy
+```
+
+## Column-wise subset - R
+
+```{r}
+library(tidyverse)
+
+tbl_policy %>% 
+  select(effective_date, expiration_date)
+```
+
+## Column-wise subset - R
+
+Text-based search of column names
+
+```{r}
+tbl_policy %>% 
+  select(contains('date')) %>% 
+  head()
+```
+
+Select everything other than excluded columns
+
+```{r }
+tbl_policy %>% 
+  select(-id) %>% 
+  head()
+```
+
+## Row-wise subset
+
+* By order of appearance
+* Logical subset
+
+## Row-wise subset - SQL
+
+```
+SELECT TOP 10
+FROM
+  tbl_policy
+```
+
+```
+SELECT * 
+FROM 
+  tbl_policy
+LIMIT 10
+```
+
+## Row-wise subset R
+
+```{r}
+tbl_policy %>% 
+  slice(1:10)
+```
+
+## Row-wise subset - SQL
+
+```
+SELECT *
+FROM
+  tbl_policy
+WHERE
+  effective_date >= '2005-01-01'
+  AND effective_date <= '2005-12-31'
+```
+
+## Row-wise subset - R
+
+```{r}
+tbl_policy %>% 
+  filter(
+    effective_date >= as.Date('2005-01-01')
+    , effective_date <= as.Date('2005-12-31')
+  )
+```
+
+## Mutation - SQL
+
+```
+SELECT 
+  *
+  , policy_duration = date(expiration_date) - date(effective_date)
+FROM
+  tbl_policy
+```
+
+## Mutation - R
+
+```{r}
+tbl_policy %>% 
+  mutate(
+    policy_duration = expiration_date - effective_date
+  ) %>% 
+  select(id, policy_duration)
+```
+
+## Summarization - SQL
+
+```
+SELECT
+	SUBSTR(effective_date, 1, 4) AS policy_year
+  , COUNT(*) AS policy_count
+  , AVG(premium) AS mean_premium
+FROM
+  tbl_policy
+GROUP BY
+	SUBSTR(effective_date, 1, 4)
+```
+
+## Summarization - R
+
+```{r}
+tbl_policy %>% 
+  group_by(policy_year = lubridate::year(effective_date)) %>% 
+  summarise(
+    policy_count = n()
+    , mean_premium = mean(premium)
+  )
+```
+
+
+## Grammar of data, two tables
+
+| Action              | SQL equivalent    | R Function  |
+|--------------------|--------------|-----------------|
+| Append rows |  UNION [ALL]   | | `bind_rows()` |
+| Same value for a column | INNER JOIN | `inner_join()` |
+| All records in table X and only related rows from table Y | LEFT JOIN | `left_join()` |
+| Only those records from table X which don't appear in table Y | LEFT JOIN and WHERE | `anti_join()`
+
+## Append rows - SQL
+
+```
+SELECT *
+FROM
+  tbl_claim
+UNION ALL
+  tbl_other
+```
+## Append rows - R
+
+```{r}
+tbl_claim %>% 
+  bind_rows(
+    tibble(
+      policy_id = 1
+      , claim_amount = 5e3
+    )
+  ) %>% 
+  filter(
+    policy_id == 1
+  )
+```
+
+## Inner join - SQL
+
+```
+SELECT 
+  pol.id AS policy_id
+  , clm.id AS claim_id
+  , premium
+  , claim_amount
+FROM 
+  tbl_policy AS pol
+  INNER JOIN tbl_claim clm ON pol.id = clm.policy_id 
+```
+
+## Inner join - R
+
+```{r}
+tbl_policy %>% 
+  inner_join(tbl_claim, by = c(id = 'policy_id'))
+```
+
+## Outer join - SQL
+
+```
+SELECT *
+FROM 
+  tbl_policy pol RIGHT JOIN tbl_claim clm ON pol.id = clm.policy_id
+```
+
+## Outer join - R
+
+```{r}
+tbl_policy %>% 
+  right_join(tbl_claim, by = c(id = 'policy_id'))
+```
+
+## Anti join - SQL
+
+```
+SELECT *
+FROM 
+  tbl_policy pol LEFT JOIN tbl_claim clm ON pol.id = clm.policy_id
+ WHERE
+	clm.id IS NULL
+```
+
+## Anti-join - R
+
+```{r}
+tbl_policy %>% 
+  anti_join(tbl_claim, by = c(id = 'policy_id')) %>% 
+  select(id, num_claims)
+```
+
+## 
+
+* Multivariate structure
+* Multivariate exploration
+* **Multivariate visualization**
+* Multivariate modeling
+
+# Multivariate visualization
+
+## `ggplot2`
+
+* Very popular visualization engine
+* Based on the "grammar of graphics" by Leland Wilkinson
+* Requires a table for construction
+
+## Scatter plot
+
+```{r}
+tbl_policy %>% 
+  ggplot(aes(years_in_operation, num_claims)) + 
+  geom_point()
+```
+
+## Scatter plot
+
+```{r}
+tbl_policy %>% 
+  ggplot(aes(years_in_operation, num_claims)) + 
+  geom_point() + 
+  geom_smooth(method = 'lm')
+```
+
+## Scatter plot
+
+```{r}
+tbl_policy %>% 
+  ggplot(aes(lubridate::year(effective_date), num_claims)) + 
+  geom_point()
+```
+
+## Scatter plot
+
+```{r}
+tbl_policy %>% 
+  ggplot(aes(lubridate::year(effective_date), num_claims)) + 
+  geom_jitter(height = NULL)
+```
+
+## Boxplot
+
+```{r}
+tbl_policy %>%
+  inner_join(tbl_claim, by = c(id = 'policy_id')) %>% 
+  mutate(
+    occ_year = lubridate::year(occurrence_date) %>% as.factor()
+  ) %>% 
+  ggplot(aes(occ_year, num_claims)) + 
+  geom_boxplot()
+```
+
+## Frequency by year of occurrence
+
+```{r}
+tbl_policy %>%
+  inner_join(tbl_claim, by = c(id = 'policy_id')) %>% 
+  mutate(
+    occ_year = lubridate::year(occurrence_date)
+  ) %>% 
+  ggplot(aes(occ_year, num_claims)) + 
+  geom_jitter(height = NULL) + 
+  geom_smooth()
+```
+
+## Frequency by date of occurrence
+
+```{r}
+tbl_policy %>%
+  inner_join(tbl_claim, by = c(id = 'policy_id')) %>% 
+  ggplot(aes(occurrence_date, num_claims)) + 
+  geom_jitter() + 
+  geom_smooth()
+```
+
+## Grouping
+
+```{r}
+tbl_policy %>% 
+  ggplot(aes(num_claims)) + 
+  geom_histogram(aes(fill = region), position = 'dodge')
+```
+
+## Grouping
+
+```{r}
+tbl_policy %>% 
+  ggplot(aes(num_claims)) + 
+  geom_histogram(aes(fill = region), position = 'dodge') + 
+  facet_wrap(~ region)
+```
+
+## Grouping
+
+```{r}
+tbl_policy %>% 
+  ggplot(aes(num_claims)) + 
+  geom_density(aes(fill = region), alpha = 0.7)
+```
+
+## 
+
+* Multivariate structure
+* Multivariate exploration
+* Multivariate visualization
+* **Multivariate modeling**
+
+# Multivariate modeling
+
+## Linear models
+
+```{r}
+fit_one <- tbl_policy %>% 
+  glm(
+    formula = num_claims ~ 1 + effective_date + years_in_operation + number_of_employees
+    , family = poisson()
+  )
+```
+
+## Model diagnostics
+
+```{r echo = FALSE}
+fit_one %>% 
+  broom::glance() %>% 
+  knitr::kable()
+```
+
+## Coefficient diagnostics
+
+```{r echo = FALSE}
+fit_one %>% 
+  broom::tidy() %>% 
+  knitr::kable()
+```
+
+## Other coefficients
+
+```{r}
+fit_two <- tbl_policy %>% 
+  glm(
+    formula = num_claims ~ 1 + effective_date + years_in_operation + number_of_employees
+    , family = poisson(link = 'identity')
+  )
+```
+
+##
+
+```{r echo = FALSE}
+fit_two %>% 
+  broom::tidy() %>% 
+  knitr::kable()
+```
+
+##
+
+```{r}
+fit_three <- tbl_policy %>% 
+  glm(
+    formula = num_claims ~ 1 + years_in_operation + number_of_employees
+    , family = poisson(link = 'identity')
+  )
+```
+
+##
+
+```{r echo = FALSE}
+fit_three %>% 
+  broom::tidy() %>% 
+  knitr::kable()
+```
+
+## Another fit
+
+```{r}
+fit_last <- tbl_policy %>% 
+  glm(
+    formula = num_claims ~ 1 + region + years_in_operation + number_of_employees
+    , family = poisson(link = 'identity')
+  )
+```
+
+## Coefficients
+
+```{r echo = FALSE}
+fit_three %>% 
+  broom::tidy() %>% 
+  knitr::kable()
+```
+
+## Compare models
+
+```{r}
+tbl_compare <- tibble(
+  model = c('One', 'Two', 'Three', 'Four')
+  , fit_obj = list(fit_one, fit_two, fit_three, fit_last)
+  , family = rep('Poisson', 4)
+  , link = c('exp', rep('identity', 3))
+) %>% 
+  mutate(
+    formula = map(fit_obj, 'formula')
+    , AIC = map_dbl(fit_obj, AIC)
+    , deviance = map_dbl(fit_obj, 'deviance')
+  ) %>% 
+  dplyr::select(
+    -fit_obj
+  ) %>% 
+  arrange(AIC)
+```
+
+## Compare models
+
+```{r echo = FALSE}
+tbl_compare %>% 
+  knitr::kable()
+```
+
+
+# Suggestions
+
+## Get familiar with a database
+  
+* SQLite https://www.sqlite.org/index.html and PostgreSQL https://www.postgresql.org/ are free
+* Learn the rules of database normalization
+* Get comfortable writing SQL. Use the GUI if you get stuck, but try to write it first
+* Create tables with rational constraints, then try to break them. Does your database permit claims without policyholders? Negative premium amounts?
+
+## Learn R or Python
+
+* Both are free and open source
+* Free learning resources abound
+* Statistical and predictive modeling support is much stronger than in Excel
+
+## Get comfortable, but not reliant, on spreadsheets
+
+* LibreOffice is free and works with Excel files
+* Try building very basic models in a spreadsheet, use functions like LINEST
+* Get comfortable passing data in and out of Excel
+
+## Market yourself while you learn
+
+* Create a [Github](https://github.com/) profile
+* If sharing with employers, try to restrict public projects to work you are proud of
+* Work on Kaggle competitions
+* Find a local meetup group for R or Python
+* Prepare a talk
+
+# Conclusion
+
+## Our points
+
+* Pay close attention to data structure
+* Tabular data will enable solutions for most actuarial problems
+* Many practical business questions may be answered simply through data manipulation
+* `ggplot2` is a strong tool for data visualization
+* Think about your data in terms of models
+* Compare models to each other
+
+## Thank you!!
+
+## Resources
+
+* https://github.com/PirateGrunt/iaba_bootcamp
+* https://pirategrunt.com/raw_book/
+* [R for Data Science](https://r4ds.had.co.nz/)
+* https://www.coursera.org/learn/r-programming

@@ -1,0 +1,64 @@
+.reveal {
+  font-family: "Futura", sans-serif;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4,
+.reveal h5,
+.reveal h6 {
+  font-family: "Futura", sans-serif;
+  font-size: 1.25em;
+}
+
+.reveal blockquote {
+  background: grey;
+}
+
+.reveal section p {
+  text-align: left;
+}
+
+.reveal section img {
+  background:none;
+  border:none;
+  box-shadow:none;
+}
+
+/*
+Two column layout
+*/
+
+.reveal .left {
+  font-size: 80%;
+  left:-8.33%;
+  float: left;
+  width:50%;
+}
+
+.reveal .left .sourceCode {
+  font-size: 100%;
+}
+
+.reveal .right {
+  font-size: 90%;
+  left:31.25%;
+  float: right;
+  width:48%;
+}
+
+.gigantic-text {
+  font-size: 1800% !important;
+  text-align: center !important;
+}
+
+.gigantic-text > p {
+  font-size: 150% ;
+  text-align: center !important;
+  margin-top: -290px;
+}
+
+.my-center {
+  text-align: center;
+}
